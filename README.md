@@ -1,4 +1,5 @@
 ### 项目结构
+```bash
 .
 ├── README.md
 ├── app
@@ -23,6 +24,8 @@
 │   └── utils
 ├── requirements.txt
 └── tests
+
+```
 
 ### 启动
 

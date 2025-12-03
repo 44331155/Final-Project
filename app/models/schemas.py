@@ -1,12 +1,10 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-# 通用响应
 class CommonResp(BaseModel):
     code: int
     message: str
 
-# 登录
 class LoginReq(BaseModel):
     username: str
     password: str
@@ -17,30 +15,14 @@ class LoginData(BaseModel):
 class LoginResp(CommonResp):
     data: LoginData
 
-# 课表
-class Course(BaseModel):
-    id: Optional[int] = None
-    code: Optional[str] = None
-    name: str
-    teacher: Optional[str] = None
+# 原始课表返回：仅包含 kbList 数组
+class TimetableRawData(BaseModel):
+    kbList: List[Dict[str, Any]]
 
-class Session(BaseModel):
-    courseCode: Optional[str] = None
-    courseName: str
-    weekday: int            # 1-7
-    start_slot: int
-    end_slot: int
-    classroom: Optional[str] = None
-    weeks: Optional[List[int]] = None
+class TimetableRawResp(CommonResp):
+    data: TimetableRawData
 
-class TimetableData(BaseModel):
-    courses: List[Course]
-    sessions: List[Session]
-
-class TimetableResp(CommonResp):
-    data: TimetableData
-
-# 日历
+# 其余原有模型（如 Calendar、Events）保留
 class CalendarEvent(BaseModel):
     title: str
     startTime: str
@@ -51,7 +33,6 @@ class CalendarEvent(BaseModel):
 class CalendarResp(CommonResp):
     data: List[CalendarEvent]
 
-# 自定义事件
 class EventCreateReq(BaseModel):
     title: str
     startTime: str
