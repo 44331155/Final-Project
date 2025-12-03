@@ -19,21 +19,21 @@ def parse_semester_id(semester_id: str) -> Tuple[str, str]:
         raise TimetableFetchError(f"无效的学期格式: {semester_id}")
     xnm = parts[0]
     term = parts[-1]
-    xqm = "3" if term == "1" else "12"
+    xqm = "1" if term == "1" else "2"
     return xnm, xqm
 
 def xqm_from_xxq(xxq: str) -> str:
     """
     将中文学期标识映射为 xqm：
-      - 秋冬 -> 3
-      - 春夏 -> 12
+      - 秋冬 -> 1
+      - 春夏 -> 2
     """
     if not xxq:
         return ""
     if "秋冬" in xxq:
-        return "3"
+        return "1"
     if "春夏" in xxq:
-        return "12"
+        return "2"
     return ""
 
 def semester_from_xkkh(xkkh: str) -> str:
