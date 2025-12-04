@@ -1,0 +1,19 @@
+# 忽略项目根目录的虚拟环境
+/.venv/
+
+# Python 字节码 / 缓存
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# 测试与类型检查缓存
+.pytest_cache/
+.mypy_cache/
+
+# 覆盖率与其它常见产物
+.coverage
+.coverage.*
+.cache
+pip-wheel-metadata/
+*.egg-info/

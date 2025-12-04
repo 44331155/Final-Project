@@ -56,10 +56,18 @@ curl -X 'POST' \
 |   401     |   未登录或登录失败      |
 |   422     |    验证错误            |
 
-### 测试登录教务系统
+### 测试登录教务系统并获得课表数据
 
 ```bash
 curl -X 'GET' \
-    'http://127.0.0.1:8000/api/timetable?semester=AIMSEMESTER' \
+    'http://127.0.0.1:8000/api/timetable?semester=2024-2025-2' \
     -H 'Authorization:Bearer YOURTOKEN'
+```
+
+### 数据库入库
+
+```bash
+curl -X POST \
+    'http://127.0.0.1:8000/api/timetable/sync?semester=2024-2025-2' \
+    -H 'Authorization: Bearer YOURTOKEN'
 ```
