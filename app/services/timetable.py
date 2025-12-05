@@ -240,8 +240,9 @@ def parse_kblist_to_occurrences(kb_list: List[Dict]) -> List[Dict]:
             season_list = []  # 保持为空可选择不入库，或设定默认季节
 
         for w in weeks:
-            starts_at, ends_at = compute_datetime(semester, w, weekday, period_start, period_count)
             for season in season_list:
+                week_for_date = w + 8 if season in ("冬", "夏") else w
+                starts_at, ends_at = compute_datetime(semester, week_for_date, weekday, period_start, period_count)
                 occurrences.append({
                     "course_code": course_code,
                     "course_name": course_name,
@@ -256,6 +257,7 @@ def parse_kblist_to_occurrences(kb_list: List[Dict]) -> List[Dict]:
                     "single_week": single_week,
                     "double_week": double_week,
                     "season": season,
+                    "semester": semester,
                     "note": note
                 })
     return occurrences

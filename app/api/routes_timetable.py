@@ -5,7 +5,7 @@ from ..models.schemas import TimetableRawResp
 from .deps import get_current_user
 from ..storage.session_store import get_sso
 from ..services.timetable import fetch_kblist, TimetableFetchError, parse_kblist_to_occurrences
-from ..storage.db import get_conn, init_schema, upsert_course, insert_occurrence
+from ..storage.db import get_conn, init_schema, upsert_course, insert_occurrence, delete_occurrences_by_semester, cleanup_orphan_courses
 from ..config import settings
 
 router = APIRouter()
@@ -47,6 +47,9 @@ async def sync_timetable(
     conn = get_conn(settings.DB_PATH)
     init_schema(conn)
     try:
+        # 先清空该学期旧数据
+        delete_occurrences_by_semester(conn, semester)
+
         for occ in occs:
             course_id = upsert_course(conn, occ["course_code"], occ["course_name"], occ["teacher"])
             insert_occurrence(conn, {
@@ -61,8 +64,12 @@ async def sync_timetable(
                 "single_week": occ["single_week"],
                 "double_week": occ["double_week"],
                 "season": occ["season"],
+                "semester": occ.get("semester"),
                 "note": occ["note"],
             })
+        # 可选：清理不再引用的课程
+        cleanup_orphan_courses(conn)
+
         conn.commit()
     finally:
         conn.close()

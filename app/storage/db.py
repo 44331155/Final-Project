@@ -27,12 +27,36 @@ CREATE TABLE IF NOT EXISTS occurrences (
   single_week INTEGER DEFAULT 0,
   double_week INTEGER DEFAULT 0,
   season TEXT NOT NULL,  -- 新增季节标签：春/夏/秋/冬
+  semester TEXT, -- 学期标识，例如 2024-2025-1
   note TEXT,
   FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_occurrences_time ON occurrences (starts_at, ends_at);
 CREATE INDEX IF NOT EXISTS idx_occurrences_week_day ON occurrences (week, weekday);
 CREATE INDEX IF NOT EXISTS idx_occurrences_season ON occurrences (season);
+CREATE INDEX IF NOT EXISTS idx_occurrences_semester ON occurrences (semester);
+
+CREATE VIEW IF NOT EXISTS v_calendar_events AS
+SELECT
+  o.id,
+  o.starts_at,
+  o.ends_at,
+  o.week,
+  o.weekday,
+  o.period_start,
+  o.period_count,
+  o.classroom,
+  o.season,
+  o.semester,
+  o.single_week,
+  o.double_week,
+  o.note,
+  c.name       AS course_name,
+  c.course_code,
+  c.teacher,
+  c.department
+FROM occurrences o
+JOIN courses c ON o.course_id = c.id;
 """
 
 def get_conn(db_path: str) -> sqlite3.Connection:
@@ -60,8 +84,14 @@ def upsert_course(conn: sqlite3.Connection, course_code: str, name: str, teacher
 def insert_occurrence(conn: sqlite3.Connection, occ: Dict):
     conn.execute(
         """INSERT INTO occurrences
-           (course_id, week, weekday, period_start, period_count, classroom, starts_at, ends_at, single_week, double_week, season, note)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           (course_id, week, weekday, period_start, period_count, classroom, starts_at, ends_at, single_week, double_week, season, semester, note)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (occ["course_id"], occ["week"], occ["weekday"], occ["period_start"], occ["period_count"], occ["classroom"],
-         occ["starts_at"], occ["ends_at"], int(occ.get("single_week", 0)), int(occ.get("double_week", 0)), occ["season"], occ.get("note"))
+         occ["starts_at"], occ["ends_at"], int(occ.get("single_week", 0)), int(occ.get("double_week", 0)), occ["season"], occ.get("semester"), occ.get("note"))
     )
+
+def delete_occurrences_by_semester(conn: sqlite3.Connection, semester: str):
+    conn.execute("DELETE FROM occurrences WHERE semester = ?", (semester,))
+
+def cleanup_orphan_courses(conn: sqlite3.Connection):
+    conn.execute("DELETE FROM courses WHERE id NOT IN (SELECT DISTINCT course_id FROM occurrences)")
