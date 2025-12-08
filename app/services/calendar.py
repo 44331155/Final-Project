@@ -51,10 +51,14 @@ def build_events_from_db(conn: sqlite3.Connection, start_iso: str, end_iso: str,
     for r in rows:
         events.append({
             "title": r.get("course_name"),
+            "periodStart": r.get("period_start"),
+            "periodCount": r.get("period_count"),
             "start": r.get("starts_at"),
             "end": r.get("ends_at"),
             "location": r.get("classroom"),
-            "description": f"教师: {r.get('teacher')}",
+            "teacher": r.get("teacher"),
+            "season": r.get("season"),
+            "weekday": r.get("weekday"),
             "type": "course"
         })
 
