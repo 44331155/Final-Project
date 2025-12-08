@@ -51,23 +51,39 @@ curl -X 'POST' \
 ```
 返回如下表
 |   代码    |   描述       |
-|:-------|---------|
+|-------|:---------|
 |   200     |   登录成功             |
 |   401     |   未登录或登录失败      |
 |   422     |    验证错误            |
 
-### 测试登录教务系统并获得课表数据
+### 获得课表数据
 
 ```bash
 curl -X 'GET' \
     'http://127.0.0.1:8000/api/timetable?semester=2024-2025-2' \
-    -H 'Authorization:Bearer YOURTOKEN'
+    -H 'Authorization:Bearer <token>'
 ```
 
-### 数据库入库
+### 获取课表并存入数据库
 
 ```bash
 curl -X POST \
     'http://127.0.0.1:8000/api/timetable/sync?semester=2024-2025-2' \
-    -H 'Authorization: Bearer YOURTOKEN'
+    -H 'Authorization: Bearer <token>'
 ```
+
+### 事件查询
+
+```bash
+curl -X GET "http://127.0.0.1:8000/api/calendar/events?date_from=2025-03-01&date_to=2025-03-07" -H "Authorization: Bearer <token>"
+```
+
+### 导出ICS
+
+```bash
+curl -H "Authorization: Bearer <token>" "http://127.0.0.1:8000/api/calendar/export.ics?date_from=2025-03-01&date_to=2025-03-07" -o period.ics
+```
+
+## 待完成
+
+制作一张表仅存放课程数据，不存储日期

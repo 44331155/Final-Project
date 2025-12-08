@@ -42,7 +42,8 @@ async def sync_timetable(
     except TimetableFetchError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    occs = parse_kblist_to_occurrences(kb_list)
+    # 将课表数据转化为记录
+    occs = parse_kblist_to_occurrences(kb_list) 
 
     conn = get_conn(settings.DB_PATH)
     init_schema(conn)
