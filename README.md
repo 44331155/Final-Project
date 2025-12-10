@@ -78,6 +78,14 @@ curl -X POST \
 curl -X GET "http://127.0.0.1:8000/api/calendar/events?date_from=2025-03-01&date_to=2025-03-07" -H "Authorization: Bearer <token>"
 ```
 
+### 获取课程模板
+
+```bash
+curl -X 'GET' \
+  'http://127.0.0.1:8000/api/timetable/template?semester=2024-2025-1&season_type=1&week_type=single' \
+  -H 'Authorization: Bearer <token>'
+```
+
 ### 导出ICS
 
 ```bash

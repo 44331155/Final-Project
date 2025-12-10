@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, Depends, HTTPException
-from typing import Optional, List
+from typing import Optional, List, Literal
 import sqlite3
 from ..models.schemas import TimetableRawResp
 from .deps import get_current_user
@@ -151,5 +151,85 @@ async def by_date(
             } for r in rows
         ]
         return {"code": 0, "message": "ok", "data": events}
+    finally:
+        conn.close()
+
+@router.get("/template")
+async def get_week_template(
+    semester: str = Query(..., description="学期标识，例如 2024-2025-1"),
+    season_type: int = Query(..., description="前半学期：1（春秋），后半学期：2（冬夏）"),
+    week_type_input: int = Query(..., description="周类型：1=单周，2=双周"),
+    username: str = Depends(get_current_user),
+):
+    if semester.endswith("-1"):
+        season = "秋" if season_type == 1 else "冬"
+    else:
+        season = "春" if season_type == 1 else "夏"
+
+    if week_type_input == 1:
+        week_type = "single"
+    else:
+        week_type = "double"
+    """
+    获取指定学期、季节和周类型的“周课表模板”。
+    这个接口会返回一个去重后的、代表一周内所有课程安排的列表。
+    """
+    conn = get_conn(settings.DB_PATH)
+    conn.row_factory = sqlite3.Row  # 确保可以按列名访问
+    try:
+        # 我们使用 GROUP BY 对课程、星期、节次等关键信息进行分组
+        # 这样，一门每周都上的课在模板中只会出现一次
+        sql = """
+        SELECT
+            o.weekday,
+            o.period_start,
+            o.period_count,
+            o.classroom,
+            o.season,
+            o.single_week,
+            o.double_week,
+            c.name AS course_name,
+            c.teacher,
+            c.course_code,
+            GROUP_CONCAT(DISTINCT o.week) AS weeks_raw
+        FROM occurrences o
+        JOIN courses c ON o.course_id = c.id
+        WHERE o.semester = ? AND o.season = ?
+        """
+        params: List = [semester, season]
+
+        if week_type == "single":
+            sql += " AND o.double_week = 0"
+        elif week_type == "double":
+            sql += " AND o.single_week = 0"
+        # 如果 week_type 是 'all'，则不添加额外筛选条件
+
+        sql += """
+        GROUP BY
+            c.id, o.weekday, o.period_start, o.period_count, o.classroom, o.season, o.single_week, o.double_week
+        ORDER BY
+            o.weekday, o.period_start;
+        """
+
+        cur = conn.execute(sql, params)
+        rows = cur.fetchall()
+
+        # 将查询结果格式化为更友好的 JSON
+        template_events = [
+            {
+                "weekday": r["weekday"],
+                "periodStart": r["period_start"],
+                "periodCount": r["period_count"],
+                "title": r["course_name"],
+                "teacher": r["teacher"],
+                "classroom": r["classroom"],
+                "weekType": "single" if r["single_week"] else ("double" if r["double_week"] else "all"),
+            } for r in rows
+        ]
+
+        return {"code": 0, "message": "ok", "data": template_events}
+    except Exception as e:
+        # 可以在这里添加更详细的日志记录
+        raise HTTPException(status_code=500, detail=f"生成课表模板时出错: {e}")
     finally:
         conn.close()

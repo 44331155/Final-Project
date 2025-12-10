@@ -143,7 +143,7 @@ def parse_kcb_fields(kcb: str) -> dict:
             classroom = classroom_line[:md.start()].strip()
         else:
             classroom = classroom_line.strip()
-        classroom = re.sub(r"zwf$", "", classroom).strip()
+        classroom = re.sub(r"(zwf)+$", "", classroom).strip()
 
     return {
         "course_name": course_name,
