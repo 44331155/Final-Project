@@ -19,7 +19,7 @@ class LoginResp(CommonResp):
 class TimetableRawData(BaseModel):
     kbList: List[Dict[str, Any]]
 
-class TimetableRawResp(CommonResp):
+class TimetableRawResp(BaseModel):
     data: TimetableRawData
 
 # 其余原有模型（如 Calendar、Events）保留
@@ -38,3 +38,12 @@ class EventCreateReq(BaseModel):
     startTime: str
     endTime: str
     place: Optional[str] = None
+
+# 添加以下模型
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

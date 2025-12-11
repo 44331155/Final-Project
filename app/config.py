@@ -6,8 +6,10 @@ from pydantic import field_validator
 TermPeriods = List[Tuple[time, time]]
 
 class Settings(BaseSettings):
-    JWT_SECRET: str = "replace_me"
     DB_PATH: str = "data/schedule.db"
+    JWT_SECRET: str = "a_very_secret_key_change_it_in_production"
+    # 新增用于加密密码的密钥
+    ENCRYPTION_KEY: str = "5ZNNJxlB_leSfnTvWTWZp5dqc1-6gvW97_3CeYl43PE="
 
     # 默认学期标识（用于未显式传入学期的场景）
     CURRENT_TERM: str = "2025-2026-1"
@@ -31,16 +33,18 @@ class Settings(BaseSettings):
 
     # 多学期配置：每个学期至少设置 start_monday，可选 periods（不填则使用 DEFAULT_PERIODS）
     TERM_CONFIGS: Dict[str, Dict[str, object]] = {
-        # 春夏学期
-        "2024-2025-2": {
-            "start_monday": date(2025, 2, 17),
-            # 不设置 periods 则使用 DEFAULT_PERIODS
+        "2023-2024-1": {
+            "start_monday": date(2023, 9, 18),
         },
-        # 秋冬学期
+        "2023-2024-2": {
+            "start_monday": date(2024, 2, 26),
+        },
         "2024-2025-1": {
             "start_monday": date(2024, 9, 9),
         },
-        # 示例：2025-2026-1
+        "2024-2025-2": {
+            "start_monday": date(2025, 2, 17),
+        },
         "2025-2026-1": {
             "start_monday": date(2025, 9, 15),
         },

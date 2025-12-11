@@ -5,14 +5,22 @@ from typing import Dict
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password_encrypted TEXT NOT NULL -- 将 password_hash 修改为 password_encrypted
+);
+
 CREATE TABLE IF NOT EXISTS courses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
   course_code TEXT NOT NULL,
   name TEXT NOT NULL,
   teacher TEXT NOT NULL,
-  department TEXT
+  department TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_courses_code_teacher ON courses (course_code, teacher);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_courses_code_teacher ON courses (user_id, course_code, teacher);
 
 CREATE TABLE IF NOT EXISTS occurrences (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,14 +77,14 @@ def get_conn(db_path: str) -> sqlite3.Connection:
 def init_schema(conn: sqlite3.Connection):
     conn.executescript(SCHEMA_SQL)
 
-def upsert_course(conn: sqlite3.Connection, course_code: str, name: str, teacher: str, department=None) -> int:
+def upsert_course(conn: sqlite3.Connection, user_id: int, course_code: str, name: str, teacher: str, department=None) -> int:
     conn.execute(
-        "INSERT OR IGNORE INTO courses(course_code, name, teacher, department) VALUES (?, ?, ?, ?)",
-        (course_code, name, teacher, department)
+        "INSERT OR IGNORE INTO courses(user_id, course_code, name, teacher, department) VALUES (?, ?, ?, ?, ?)",
+        (user_id, course_code, name, teacher, department)
     )
     cur = conn.execute(
-        "SELECT id FROM courses WHERE course_code=? AND teacher=?",
-        (course_code, teacher)
+        "SELECT id FROM courses WHERE user_id=? AND course_code=? AND teacher=?",
+        (user_id, course_code, teacher)
     )
     row = cur.fetchone()
     return int(row["id"])
@@ -90,8 +98,13 @@ def insert_occurrence(conn: sqlite3.Connection, occ: Dict):
          occ["starts_at"], occ["ends_at"], int(occ.get("single_week", 0)), int(occ.get("double_week", 0)), occ["season"], occ.get("semester"), occ.get("note"))
     )
 
-def delete_occurrences_by_semester(conn: sqlite3.Connection, semester: str):
-    conn.execute("DELETE FROM occurrences WHERE semester = ?", (semester,))
+def delete_occurrences_by_semester(conn: sqlite3.Connection, user_id: int, semester: str):
+    conn.execute("""
+        DELETE FROM occurrences
+        WHERE semester = ? AND course_id IN (
+            SELECT id FROM courses WHERE user_id = ?
+        )
+    """, (semester, user_id))
 
 def cleanup_orphan_courses(conn: sqlite3.Connection):
     conn.execute("DELETE FROM courses WHERE id NOT IN (SELECT DISTINCT course_id FROM occurrences)")

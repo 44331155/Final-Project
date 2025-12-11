@@ -2,24 +2,27 @@ from fastapi import APIRouter, Query, Depends, HTTPException
 from typing import Optional, List, Literal
 import sqlite3
 from ..models.schemas import TimetableRawResp
-from .deps import get_current_user
-from ..storage.session_store import get_sso
+from .deps import get_current_user, get_valid_sso_cookie # 导入新的依赖项
 from ..services.timetable import fetch_kblist, TimetableFetchError, parse_kblist_to_occurrences
 from ..storage.db import get_conn, init_schema, upsert_course, insert_occurrence, delete_occurrences_by_semester, cleanup_orphan_courses
 from ..config import settings
 
 router = APIRouter()
 
+# 一个辅助函数，用于从用户名获取用户ID
+def get_user_id(conn: sqlite3.Connection, username: str) -> int:
+    cur = conn.execute("SELECT id FROM users WHERE username = ?", (username,))
+    user_row = cur.fetchone()
+    if not user_row:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    return user_row["id"]
+
 @router.get("", response_model=TimetableRawResp)
 async def get_timetable(
     semester: str = Query(..., description="例如 2024-2025-1 或 2024-2025-2"),
     strict: Optional[bool] = Query(True, description="为 false 时不按学期过滤，直接返回全部 kbList"),
-    username: str = Depends(get_current_user),
+    sso_cookie: str = Depends(get_valid_sso_cookie), # 使用新的依赖项
 ):
-    sso_cookie = get_sso(username)
-    if not sso_cookie:
-        raise HTTPException(status_code=401, detail="登录态已过期，请重新登录")
-
     try:
         kb_list = await fetch_kblist(sso_cookie, semester_id=semester, strict_filter=bool(strict))
         return {"code": 0, "message": "ok", "data": {"kbList": kb_list}}
@@ -32,11 +35,8 @@ async def get_timetable(
 async def sync_timetable(
     semester: str = Query(...),
     username: str = Depends(get_current_user),
+    sso_cookie: str = Depends(get_valid_sso_cookie), # 使用新的依赖项
 ):
-    sso_cookie = get_sso(username)
-    if not sso_cookie:
-        raise HTTPException(status_code=401, detail="登录态已过期，请重新登录")
-
     try:
         kb_list = await fetch_kblist(sso_cookie, semester_id=semester, strict_filter=True)
     except TimetableFetchError as e:
@@ -48,11 +48,12 @@ async def sync_timetable(
     conn = get_conn(settings.DB_PATH)
     init_schema(conn)
     try:
+        user_id = get_user_id(conn, username)
         # 先清空该学期旧数据
-        delete_occurrences_by_semester(conn, semester)
+        delete_occurrences_by_semester(conn, user_id, semester)
 
         for occ in occs:
-            course_id = upsert_course(conn, occ["course_code"], occ["course_name"], occ["teacher"])
+            course_id = upsert_course(conn, user_id, occ["course_code"], occ["course_name"], occ["teacher"])
             insert_occurrence(conn, {
                 "course_id": course_id,
                 "week": occ["week"],
@@ -86,10 +87,11 @@ async def by_week(
 ):
     conn = get_conn(settings.DB_PATH)
     try:
+        user_id = get_user_id(conn, username)
         sql = """SELECT o.*, c.name as course_name, c.teacher, c.course_code
                  FROM occurrences o JOIN courses c ON o.course_id = c.id
-                 WHERE o.week = ?"""
-        params: List = [week]
+                 WHERE c.user_id = ? AND o.week = ?"""
+        params: List = [user_id, week]
         if season:
             sql += " AND o.season = ?"
             params.append(season)
@@ -126,12 +128,13 @@ async def by_date(
 ):
     conn = get_conn(settings.DB_PATH)
     try:
+        user_id = get_user_id(conn, username)
         start = f"{date_str}T00:00:00"
         end = f"{date_str}T23:59:59"
         sql = """SELECT o.*, c.name as course_name, c.teacher, c.course_code
                  FROM occurrences o JOIN courses c ON o.course_id = c.id
-                 WHERE o.starts_at >= ? AND o.ends_at <= ?"""
-        params: List = [start, end]
+                 WHERE c.user_id = ? AND o.starts_at >= ? AND o.ends_at <= ?"""
+        params: List = [user_id, start, end]
         if season:
             sql += " AND o.season = ?"
             params.append(season)
@@ -177,6 +180,7 @@ async def get_week_template(
     conn = get_conn(settings.DB_PATH)
     conn.row_factory = sqlite3.Row  # 确保可以按列名访问
     try:
+        user_id = get_user_id(conn, username)
         # 我们使用 GROUP BY 对课程、星期、节次等关键信息进行分组
         # 这样，一门每周都上的课在模板中只会出现一次
         sql = """
@@ -194,9 +198,9 @@ async def get_week_template(
             GROUP_CONCAT(DISTINCT o.week) AS weeks_raw
         FROM occurrences o
         JOIN courses c ON o.course_id = c.id
-        WHERE o.semester = ? AND o.season = ?
+        WHERE c.user_id = ? AND o.semester = ? AND o.season = ?
         """
-        params: List = [semester, season]
+        params: List = [user_id, semester, season]
 
         if week_type == "single":
             sql += " AND o.double_week = 0"
