@@ -1,9 +1,12 @@
-from pydantic import BaseModel
-from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
+from typing import Optional, Any, List, Dict, Union
 
 class CommonResp(BaseModel):
-    code: int
-    message: str
+    code: int = 0
+    message: str = "ok"
+    # 关键修改：明确指定 data 的类型，并提供一个工厂默认值
+    # 这能更好地帮助 FastAPI/Pydantic 处理空列表的情况
+    data: Union[List, Dict, None] = None
 
 class LoginReq(BaseModel):
     username: str
@@ -33,7 +36,7 @@ class CalendarEvent(BaseModel):
 class CalendarResp(CommonResp):
     data: List[CalendarEvent]
 
-class EventCreateReq(BaseModel):
+class EventReq(BaseModel):
     title: str
     startTime: str
     endTime: str

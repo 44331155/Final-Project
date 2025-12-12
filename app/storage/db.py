@@ -44,6 +44,18 @@ CREATE INDEX IF NOT EXISTS idx_occurrences_week_day ON occurrences (week, weekda
 CREATE INDEX IF NOT EXISTS idx_occurrences_season ON occurrences (season);
 CREATE INDEX IF NOT EXISTS idx_occurrences_semester ON occurrences (semester);
 
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  location TEXT,
+  description TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_events_time ON events (start_time, end_time);
+
 CREATE VIEW IF NOT EXISTS v_calendar_events AS
 SELECT
   o.id,
