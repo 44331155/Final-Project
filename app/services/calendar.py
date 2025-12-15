@@ -47,11 +47,12 @@ def build_events_from_db(conn: sqlite3.Connection, start_iso: str, end_iso: str,
     for r in cur_courses.fetchall():
         r_dict = dict(r)
         events.append({
+            "id": r_dict.get("id"),
             "title": r_dict.get("course_name"),
             "periodStart": r_dict.get("period_start"),
             "periodCount": r_dict.get("period_count"),
-            "start": r_dict.get("starts_at"),
-            "end": r_dict.get("ends_at"),
+            "start_time": r_dict.get("starts_at"),
+            "end_time": r_dict.get("ends_at"),
             "location": r_dict.get("classroom"),
             "teacher": r_dict.get("teacher"),
             "season": r_dict.get("season"),
@@ -67,16 +68,17 @@ def build_events_from_db(conn: sqlite3.Connection, start_iso: str, end_iso: str,
     for r in cur_events.fetchall():
         r_dict = dict(r)
         events.append({
+            "id": r_dict.get("id"),
             "title": r_dict.get("title"),
-            "start": r_dict.get("start_time"),
-            "end": r_dict.get("end_time"),
+            "start_time": r_dict.get("start_time"),
+            "end_time": r_dict.get("end_time"),
             "location": r_dict.get("location"),
             "description": r_dict.get("description"),
             "type": "custom"
         })
 
     # 3. 按开始时间排序合并后的事件
-    events.sort(key=lambda x: x["start"])
+    events.sort(key=lambda x: x["start_time"])
     return events
 
 def _format_dt_for_ics(dt: datetime) -> str:
@@ -98,8 +100,8 @@ def generate_ics(events: List[dict]) -> str:
 
     for ev in events:
         try:
-            dt_start = _iso_to_dt(ev["start"])
-            dt_end = _iso_to_dt(ev["end"])
+            dt_start = _iso_to_dt(ev["start_time"])
+            dt_end = _iso_to_dt(ev["end_time"])
         except Exception:
             # skip invalid
             continue

@@ -7,6 +7,7 @@ from ..storage.db import get_conn
 from ..models.schemas import CommonResp
 from ..api.deps import get_current_user
 from ..services.calendar import build_events_from_db, generate_ics
+from ..config import settings
 import sqlite3
 
 router = APIRouter()
@@ -21,11 +22,11 @@ async def get_calendar_events(
     end: str = Query(..., description="结束时间 (YYYY-MM-DDTHH:MM:SS)"),
     season: Optional[str] = Query(None, description="可选：春/夏/秋/冬"),
     username: str = Depends(get_current_user),
-    conn: sqlite3.Connection = Depends(get_conn),
 ):
     """
     返回指定日期区间内的日历事件（课程 + 自定义事件）
     """
+    conn = get_conn(settings.DB_PATH)
     try:
         # 3. 直接将参数传递给服务层，不再手动拼接
         events = build_events_from_db(conn, start, end, season=season, username=username)
