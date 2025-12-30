@@ -12,11 +12,18 @@ class LoginReq(BaseModel):
     username: str
     password: str
 
+class WeChatBindReq(BaseModel):
+    code: str
+
+class WeChatLoginReq(BaseModel):
+    code: str
+
 class LoginData(BaseModel):
     token: str
+    is_wechat_bound: bool = False  # 新增字段
 
 class LoginResp(CommonResp):
-    data: LoginData
+    data: Optional[LoginData] = None
 
 # 原始课表返回：仅包含 kbList 数组
 class TimetableRawData(BaseModel):

@@ -8,8 +8,10 @@ TermPeriods = List[Tuple[time, time]]
 class Settings(BaseSettings):
     DB_PATH: str = "data/schedule.db"
     JWT_SECRET: str = "a_very_secret_key_change_it_in_production"
-    # 新增用于加密密码的密钥
     ENCRYPTION_KEY: str = "5ZNNJxlB_leSfnTvWTWZp5dqc1-6gvW97_3CeYl43PE="
+
+    WECHAT_APPID: str = "wx4ff8014b152a5815"
+    WECHAT_APPSECRET: str = "2531306416eb95f63fd3602964e20d8e"
 
     # 默认学期标识（用于未显式传入学期的场景）
     CURRENT_TERM: str = "2025-2026-1"
@@ -47,6 +49,9 @@ class Settings(BaseSettings):
         },
         "2025-2026-1": {
             "start_monday": date(2025, 9, 15),
+        },
+        "2025-2026-2": {
+            "start_monday": date(2026, 3, 2),
         },
     }
 

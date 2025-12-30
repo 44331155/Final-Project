@@ -139,7 +139,7 @@ return {"code": 0, "message": "ok"}
 GET calendar/事件查询
 ```bash
 curl -X 'GET' \
-  'http:127.0.0.1:8000/api/calendar?start=STARTTIME&end=ENDTIME'
+  'http://127.0.0.1:8000/api/calendar?start=STARTTIME&end=ENDTIME'
   -H "Authorization: Bearer <token>"
 ```
 return {"code": 0, "message": "ok", "data": events}
