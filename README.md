@@ -55,6 +55,48 @@ curl -X 'POST' \
   "password": "string"
 }'
 ```
+return {"code": 0, "message": "ok", "data": {"token": token, "is_wechat_bound": false}}
+
+POST auth/bind-wechat 绑定微信
+```bash
+curl -X 'POST' \
+  'http://127.0.0.1:8000/api/auth/bind-wechat' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "code": "wx_code"
+}'
+```
+return {"code": 0, "message": "绑定成功"}
+
+POST auth/login-by-wechat 微信免密登录
+```bash
+curl -X 'POST' \
+  'http://127.0.0.1:8000/api/auth/login-by-wechat' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "code": "wx_code"
+}'
+```
+return {"code": 0, "message": "ok", "data": {"token": token, "is_wechat_bound": true}}
+
+GET auth/me 获取当前用户信息
+```bash
+curl -X 'GET' \
+  'http://127.0.0.1:8000/api/auth/me' \
+  -H 'Authorization: Bearer <token>'
+```
+return {"code": 0, "message": "ok", "data": {"username": "foo", "is_wechat_bound": true}}
+
+POST auth/unbind-wechat 解绑微信
+```bash
+curl -X 'POST' \
+  'http://127.0.0.1:8000/api/auth/unbind-wechat' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{}'
+```
+return {"code": 0, "message": "ok", "data": {"is_wechat_bound": false}}
 
 ### timetable
 
